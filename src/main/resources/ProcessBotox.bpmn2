@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- origin at X=0.0 Y=0.0 -->
+<bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:java="http://www.java.com/javaTypes" xmlns:tns="http://www.jboss.org/drools" xmlns="http://www.jboss.org/drools" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd http://www.jboss.org/drools drools.xsd http://www.bpsim.org/schemas/1.0 bpsim.xsd" id="Definition" exporter="org.eclipse.bpmn2.modeler.core" exporterVersion="1.1.2.Final" expressionLanguage="http://www.mvel.org/2.0" targetNamespace="http://www.jboss.org/drools" typeLanguage="http://www.java.com/javaTypes">
+  <bpmn2:itemDefinition id="ItemDefinition_23" isCollection="false" structureRef="Integer"/>
+  <bpmn2:itemDefinition id="ItemDefinition_99" isCollection="false" structureRef="Boolean"/>
+  <bpmn2:itemDefinition id="ItemDefinition_45" isCollection="false" structureRef="com.medicine.control.handler.MailWithAuthentication"/>
+  <bpmn2:itemDefinition id="ItemDefinition_67" isCollection="false" structureRef="com.medicine.control.handler.CallRestfulWebService"/>
+  <bpmn2:itemDefinition id="ItemDefinition_61" isCollection="false" structureRef="com.medicine.control.handler.VerificationCurrentTime"/>
+  <bpmn2:itemDefinition id="ItemDefinition_348" isCollection="false" structureRef="Object"/>
+  <bpmn2:itemDefinition id="ItemDefinition_505" isCollection="false" structureRef="java.lang.Long">
+    <bpmn2:documentation id="Documentation_196">long</bpmn2:documentation>
+  </bpmn2:itemDefinition>
+  <bpmn2:signal id="Signal_1" name="Signal 1"/>
+  <bpmn2:process id="medicine.control.ProcessBotox" tns:packageName="defaultPackage" name="ProcessBotox" isExecutable="true" processType="Private">
+    <bpmn2:extensionElements>
+      <tns:import name="com.medicine.control.handler.MailWithAuthentication"/>
+      <tns:import name="com.medicine.control.handler.CallRestfulWebService"/>
+      <tns:import name="com.medicine.control.handler.VerificationCurrentTime"/>
+      <tns:import name="java.lang.Long"/>
+    </bpmn2:extensionElements>
+    <bpmn2:property id="count" itemSubjectRef="ItemDefinition_23" name="count"/>
+    <bpmn2:property id="itsON" itemSubjectRef="ItemDefinition_99" name="itsON"/>
+    <bpmn2:property id="temperature" itemSubjectRef="ItemDefinition_23" name="temperature"/>
+    <bpmn2:property id="sendMessageTemp" itemSubjectRef="ItemDefinition_99" name="sendMessageTemp"/>
+    <bpmn2:property id="alertTemp" itemSubjectRef="ItemDefinition_99" name="alertTemp"/>
+    <bpmn2:property id="notification" itemSubjectRef="ItemDefinition_45" name="notification"/>
+    <bpmn2:property id="ws" itemSubjectRef="ItemDefinition_67" name="ws"/>
+    <bpmn2:property id="CurrentTime" itemSubjectRef="ItemDefinition_61" name="CurrentTime"/>
+    <bpmn2:property id="CurrentTimestamp" itemSubjectRef="ItemDefinition_505" name="CurrentTimestamp"/>
+    <bpmn2:scriptTask id="ScriptTask_2" name="Verifica se o equipamento esta ligado" scriptFormat="http://www.java.com/java">
+      <bpmn2:incoming>SequenceFlow_22</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_9</bpmn2:outgoing>
+      <bpmn2:script>kcontext.setVariable(&quot;itsON&quot;, ws.getItsON(&quot;http://localhost:8084/RestfulWS/solicitation/itsON&quot;));</bpmn2:script>
+    </bpmn2:scriptTask>
+    <bpmn2:exclusiveGateway id="ExclusiveGateway_10" name="Qual temperatura?" gatewayDirection="Diverging">
+      <bpmn2:incoming>SequenceFlow_8</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_23</bpmn2:outgoing>
+      <bpmn2:outgoing>SequenceFlow_15</bpmn2:outgoing>
+    </bpmn2:exclusiveGateway>
+    <bpmn2:scriptTask id="ScriptTask_11" name="Verifica se já existe mensagem de alerta enviada ao medico há menos de 30 minutos" scriptFormat="http://www.java.com/java">
+      <bpmn2:incoming>SequenceFlow_23</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_7</bpmn2:outgoing>
+      <bpmn2:script>System.out.println(&quot;Temperatura: &quot; + temperature + &quot; alertTemp: &quot; + alertTemp);&#xD;
+System.out.println(&quot;Verifica se já existe mensagem de alerta enviada ao medico há menos de 30 minutos&quot;);&#xD;
+&#xD;
+if(alertTemp == false){&#xD;
+	kcontext.setVariable(&quot;alertTemp&quot;, true);&#xD;
+	kcontext.setVariable(&quot;sendMessageTemp&quot;, true);&#xD;
+}&#xD;
+else{//alertTemp == true&#xD;
+	//verifica se a mensagem foi enviada a menos de 30 minutos.&#xD;
+	if(CurrentTime.isThirtyMinutes(CurrentTimestamp) == true){&#xD;
+		kcontext.setVariable(&quot;sendMessageTemp&quot;, true);&#xD;
+	}&#xD;
+	else{&#xD;
+		kcontext.setVariable(&quot;sendMessageTemp&quot;, false);&#xD;
+	}&#xD;
+}&#xD;
+</bpmn2:script>
+    </bpmn2:scriptTask>
+    <bpmn2:sequenceFlow id="SequenceFlow_23" tns:priority="1" name="Temperatura > -5º C" sourceRef="ExclusiveGateway_10" targetRef="ScriptTask_11">
+      <bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression" id="FormalExpression_8" language="http://www.java.com/java">return temperature > -5;</bpmn2:conditionExpression>
+    </bpmn2:sequenceFlow>
+    <bpmn2:scriptTask id="ScriptTask_3" name="Avisar médico sobre temperatura regular" scriptFormat="http://www.java.com/java">
+      <bpmn2:incoming>SequenceFlow_15</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_14</bpmn2:outgoing>
+      <bpmn2:script>System.out.println(&quot;Temperatura: &quot; + temperature);&#xD;
+System.out.println(&quot;Avisar médico sobre temperatura regular?&quot;);&#xD;
+if(alertTemp == true){&#xD;
+	kcontext.setVariable(&quot;alertTemp&quot;, false);&#xD;
+	notification.sendEmail(&quot;Temperatura estabilizada&quot;, &quot;A temperatura do freezer voltou ao normal!&quot;);&#xD;
+	System.out.println(&quot;Sim&quot;);&#xD;
+}&#xD;
+else{&#xD;
+	System.out.println(&quot;Não&quot;);&#xD;
+}</bpmn2:script>
+    </bpmn2:scriptTask>
+    <bpmn2:exclusiveGateway id="ExclusiveGateway_5" name="Avisar ao médico?" gatewayDirection="Diverging" default="SequenceFlow_12">
+      <bpmn2:incoming>SequenceFlow_7</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_6</bpmn2:outgoing>
+      <bpmn2:outgoing>SequenceFlow_12</bpmn2:outgoing>
+    </bpmn2:exclusiveGateway>
+    <bpmn2:scriptTask id="ScriptTask_6" name="Avisar médico sobre elevação de temperatura" scriptFormat="http://www.java.com/java">
+      <bpmn2:incoming>SequenceFlow_6</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_13</bpmn2:outgoing>
+      <bpmn2:script>System.out.println(&quot;médico avisado sobre elevação de temperatura&quot;);&#xD;
+&#xD;
+notification.sendEmail(&quot;Elevação de temperatura [URGENTE]&quot;, &quot;Foi detectada a elevação de temperatura do freezer, recomendado verificar!&quot;);&#xD;
+kcontext.setVariable(&quot;CurrentTimestamp&quot;, System.currentTimeMillis());</bpmn2:script>
+    </bpmn2:scriptTask>
+    <bpmn2:sequenceFlow id="SequenceFlow_6" tns:priority="1" name="Sim" sourceRef="ExclusiveGateway_5" targetRef="ScriptTask_6">
+      <bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression" id="FormalExpression_7" language="http://www.java.com/java">return (alertTemp == true &amp;&amp; sendMessageTemp == true);</bpmn2:conditionExpression>
+    </bpmn2:sequenceFlow>
+    <bpmn2:sequenceFlow id="SequenceFlow_7" tns:priority="1" sourceRef="ScriptTask_11" targetRef="ExclusiveGateway_5"/>
+    <bpmn2:exclusiveGateway id="ExclusiveGateway_7" gatewayDirection="Converging">
+      <bpmn2:incoming>SequenceFlow_12</bpmn2:incoming>
+      <bpmn2:incoming>SequenceFlow_13</bpmn2:incoming>
+      <bpmn2:incoming>SequenceFlow_14</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_1</bpmn2:outgoing>
+    </bpmn2:exclusiveGateway>
+    <bpmn2:sequenceFlow id="SequenceFlow_12" tns:priority="1" name="Não" sourceRef="ExclusiveGateway_5" targetRef="ExclusiveGateway_7"/>
+    <bpmn2:sequenceFlow id="SequenceFlow_13" tns:priority="1" sourceRef="ScriptTask_6" targetRef="ExclusiveGateway_7"/>
+    <bpmn2:sequenceFlow id="SequenceFlow_14" tns:priority="1" sourceRef="ScriptTask_3" targetRef="ExclusiveGateway_7"/>
+    <bpmn2:exclusiveGateway id="ExclusiveGateway_9" gatewayDirection="Converging">
+      <bpmn2:incoming>SequenceFlow_4</bpmn2:incoming>
+      <bpmn2:incoming>SequenceFlow_17</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_22</bpmn2:outgoing>
+    </bpmn2:exclusiveGateway>
+    <bpmn2:sequenceFlow id="SequenceFlow_22" tns:priority="1" sourceRef="ExclusiveGateway_9" targetRef="ScriptTask_2"/>
+    <bpmn2:endEvent id="EndEvent_1" name="Desligado ou Removido">
+      <bpmn2:incoming>SequenceFlow_18</bpmn2:incoming>
+    </bpmn2:endEvent>
+    <bpmn2:startEvent id="StartEvent_1" name="Inicio">
+      <bpmn2:outgoing>SequenceFlow_4</bpmn2:outgoing>
+    </bpmn2:startEvent>
+    <bpmn2:sequenceFlow id="SequenceFlow_4" tns:priority="1" sourceRef="StartEvent_1" targetRef="ExclusiveGateway_9"/>
+    <bpmn2:scriptTask id="ScriptTask_1" name="Ler temperatura do sensor usando webservice" scriptFormat="http://www.java.com/java">
+      <bpmn2:incoming>SequenceFlow_11</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_8</bpmn2:outgoing>
+      <bpmn2:script>kcontext.setVariable(&quot;temperature&quot;, ws.getTemperature(&quot;http://localhost:8084/RestfulWS/solicitation/temperature&quot;));</bpmn2:script>
+    </bpmn2:scriptTask>
+    <bpmn2:sequenceFlow id="SequenceFlow_8" tns:priority="1" sourceRef="ScriptTask_1" targetRef="ExclusiveGateway_10"/>
+    <bpmn2:exclusiveGateway id="ExclusiveGateway_1" name="Está ligado?" gatewayDirection="Diverging">
+      <bpmn2:incoming>SequenceFlow_16</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_10</bpmn2:outgoing>
+      <bpmn2:outgoing>SequenceFlow_11</bpmn2:outgoing>
+    </bpmn2:exclusiveGateway>
+    <bpmn2:sequenceFlow id="SequenceFlow_9" tns:priority="1" sourceRef="ScriptTask_2" targetRef="ScriptTask_4"/>
+    <bpmn2:sequenceFlow id="SequenceFlow_10" tns:priority="1" name="Não" sourceRef="ExclusiveGateway_1" targetRef="ScriptTask_8">
+      <bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression" id="FormalExpression_9" language="http://www.java.com/java">return itsON == false;</bpmn2:conditionExpression>
+    </bpmn2:sequenceFlow>
+    <bpmn2:sequenceFlow id="SequenceFlow_11" tns:priority="1" name="Sim" sourceRef="ExclusiveGateway_1" targetRef="ScriptTask_1">
+      <bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression" id="FormalExpression_12" language="http://www.java.com/java">return itsON == true;</bpmn2:conditionExpression>
+    </bpmn2:sequenceFlow>
+    <bpmn2:sequenceFlow id="SequenceFlow_15" tns:priority="1" name="Temperatura &lt;= -5º C" sourceRef="ExclusiveGateway_10" targetRef="ScriptTask_3">
+      <bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression" id="FormalExpression_1" language="http://www.java.com/java">return temperature &lt;= -5;</bpmn2:conditionExpression>
+    </bpmn2:sequenceFlow>
+    <bpmn2:scriptTask id="ScriptTask_4" name="Esta ligado?" scriptFormat="http://www.java.com/java">
+      <bpmn2:incoming>SequenceFlow_9</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_16</bpmn2:outgoing>
+      <bpmn2:script>System.out.println(&quot;\nEsta ligado?: &quot; + itsON);</bpmn2:script>
+    </bpmn2:scriptTask>
+    <bpmn2:sequenceFlow id="SequenceFlow_16" tns:priority="1" sourceRef="ScriptTask_4" targetRef="ExclusiveGateway_1"/>
+    <bpmn2:scriptTask id="ScriptTask_5" name="Hora antes de 30 segundos" scriptFormat="http://www.java.com/java">
+      <bpmn2:incoming>SequenceFlow_1</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_2</bpmn2:outgoing>
+      <bpmn2:script>System.out.println(&quot;Antes de 30 segundos: &quot; +new java.util.Date(System.currentTimeMillis()));</bpmn2:script>
+    </bpmn2:scriptTask>
+    <bpmn2:scriptTask id="ScriptTask_7" name="Hora depois de 30 segundos" scriptFormat="http://www.java.com/java">
+      <bpmn2:incoming>SequenceFlow_5</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_17</bpmn2:outgoing>
+      <bpmn2:script>System.out.println(&quot;Depois de 30 segundos: &quot; +new java.util.Date(System.currentTimeMillis()));</bpmn2:script>
+    </bpmn2:scriptTask>
+    <bpmn2:sequenceFlow id="SequenceFlow_1" tns:priority="1" sourceRef="ExclusiveGateway_7" targetRef="ScriptTask_5"/>
+    <bpmn2:intermediateCatchEvent id="IntermediateCatchEvent_1" name="30 segundos">
+      <bpmn2:incoming>SequenceFlow_2</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_5</bpmn2:outgoing>
+      <bpmn2:timerEventDefinition id="TimerEventDefinition_1">
+        <bpmn2:timeDuration xsi:type="bpmn2:tFormalExpression" id="FormalExpression_2">30s</bpmn2:timeDuration>
+      </bpmn2:timerEventDefinition>
+    </bpmn2:intermediateCatchEvent>
+    <bpmn2:sequenceFlow id="SequenceFlow_2" tns:priority="1" sourceRef="ScriptTask_5" targetRef="IntermediateCatchEvent_1"/>
+    <bpmn2:sequenceFlow id="SequenceFlow_5" tns:priority="1" sourceRef="IntermediateCatchEvent_1" targetRef="ScriptTask_7"/>
+    <bpmn2:sequenceFlow id="SequenceFlow_17" tns:priority="1" sourceRef="ScriptTask_7" targetRef="ExclusiveGateway_9"/>
+    <bpmn2:scriptTask id="ScriptTask_8" name="Alerta o médico sobre o desligamento do sistema" scriptFormat="http://www.java.com/java">
+      <bpmn2:incoming>SequenceFlow_10</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_18</bpmn2:outgoing>
+      <bpmn2:script>notification.sendEmail(&quot;Sensor Desligado&quot;, &quot;Não foi possível receber dados do sensor. Existe algum problema de comunicação ou falha no equipamento.&quot;);&#xD;
+System.out.println(&quot;Não foi possível receber dados do sensor. Existe algum problema de comunicação ou falha no equipamento.&quot;);</bpmn2:script>
+    </bpmn2:scriptTask>
+    <bpmn2:sequenceFlow id="SequenceFlow_18" tns:priority="1" sourceRef="ScriptTask_8" targetRef="EndEvent_1"/>
+  </bpmn2:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_Process_1" bpmnElement="medicine.control.ProcessBotox">
+      <bpmndi:BPMNShape id="BPMNShape_ScriptTask_1" bpmnElement="ScriptTask_2">
+        <dc:Bounds height="50.0" width="110.0" x="230.0" y="285.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_2">
+          <dc:Bounds height="45.0" width="103.0" x="233.0" y="287.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_ExclusiveGateway_6" bpmnElement="ExclusiveGateway_10" isMarkerVisible="true">
+        <dc:Bounds height="50.0" width="50.0" x="790.0" y="285.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_8">
+          <dc:Bounds height="30.0" width="74.0" x="778.0" y="335.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_ScriptTask_7" bpmnElement="ScriptTask_11">
+        <dc:Bounds height="76.0" width="141.0" x="998.0" y="213.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_9">
+          <dc:Bounds height="60.0" width="124.0" x="1006.0" y="221.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_ScriptTask_2" bpmnElement="ScriptTask_3">
+        <dc:Bounds height="76.0" width="133.0" x="500.0" y="660.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_6">
+          <dc:Bounds height="30.0" width="115.0" x="509.0" y="683.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_ExclusiveGateway_2" bpmnElement="ExclusiveGateway_5" isMarkerVisible="true">
+        <dc:Bounds height="50.0" width="50.0" x="1043.0" y="406.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_10">
+          <dc:Bounds height="30.0" width="53.0" x="1042.0" y="456.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_ScriptTask_4" bpmnElement="ScriptTask_6">
+        <dc:Bounds height="83.0" width="126.0" x="1025.0" y="656.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_11">
+          <dc:Bounds height="45.0" width="115.0" x="1030.0" y="675.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_ExclusiveGateway_5" bpmnElement="ExclusiveGateway_7" isMarkerVisible="true">
+        <dc:Bounds height="50.0" width="50.0" x="680.0" y="40.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_12"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_ExclusiveGateway_8" bpmnElement="ExclusiveGateway_9" isMarkerVisible="true">
+        <dc:Bounds height="50.0" width="50.0" x="140.0" y="200.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_14"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_EndEvent_1" bpmnElement="EndEvent_1">
+        <dc:Bounds height="36.0" width="36.0" x="530.0" y="160.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_1">
+          <dc:Bounds height="30.0" width="77.0" x="510.0" y="196.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_StartEvent_1" bpmnElement="StartEvent_1">
+        <dc:Bounds height="36.0" width="36.0" x="20.0" y="207.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_3">
+          <dc:Bounds height="15.0" width="29.0" x="23.0" y="243.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_ScriptTask_5" bpmnElement="ScriptTask_1">
+        <dc:Bounds height="79.0" width="130.0" x="540.0" y="270.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_5">
+          <dc:Bounds height="45.0" width="108.0" x="551.0" y="287.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_ExclusiveGateway_4" bpmnElement="ExclusiveGateway_1" isMarkerVisible="true">
+        <dc:Bounds height="50.0" width="50.0" x="419.0" y="285.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_15">
+          <dc:Bounds height="15.0" width="69.0" x="410.0" y="335.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_ScriptTask_3" bpmnElement="ScriptTask_4">
+        <dc:Bounds height="100.0" width="110.0" x="325.0" y="406.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_4">
+          <dc:Bounds height="15.0" width="69.0" x="345.0" y="448.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_ScriptTask_6" bpmnElement="ScriptTask_5">
+        <dc:Bounds height="100.0" width="110.0" x="495.0" y="0.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_7">
+          <dc:Bounds height="30.0" width="98.0" x="501.0" y="35.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_ScriptTask_8" bpmnElement="ScriptTask_7">
+        <dc:Bounds height="100.0" width="110.0" x="184.0" y="0.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_13">
+          <dc:Bounds height="30.0" width="105.0" x="186.0" y="35.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_IntermediateCatchEvent_1" bpmnElement="IntermediateCatchEvent_1">
+        <dc:Bounds height="36.0" width="36.0" x="363.0" y="32.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_16">
+          <dc:Bounds height="15.0" width="73.0" x="345.0" y="68.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_ScriptTask_9" bpmnElement="ScriptTask_8">
+        <dc:Bounds height="100.0" width="110.0" x="345.0" y="110.0"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds height="60.0" width="96.0" x="352.0" y="130.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_19" bpmnElement="SequenceFlow_23" sourceElement="BPMNShape_ExclusiveGateway_6" targetElement="BPMNShape_ScriptTask_7">
+        <di:waypoint xsi:type="dc:Point" x="815.0" y="285.0"/>
+        <di:waypoint xsi:type="dc:Point" x="815.0" y="185.0"/>
+        <di:waypoint xsi:type="dc:Point" x="1068.0" y="185.0"/>
+        <di:waypoint xsi:type="dc:Point" x="1068.0" y="213.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_16">
+          <dc:Bounds height="30.0" width="74.0" x="863.0" y="186.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_4" bpmnElement="SequenceFlow_6" sourceElement="BPMNShape_ExclusiveGateway_2" targetElement="BPMNShape_ScriptTask_4">
+        <di:waypoint xsi:type="dc:Point" x="1068.0" y="456.0"/>
+        <di:waypoint xsi:type="dc:Point" x="1067.0" y="656.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_20">
+          <dc:Bounds height="15.0" width="22.0" x="1058.0" y="557.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_5" bpmnElement="SequenceFlow_7" sourceElement="BPMNShape_ScriptTask_7" targetElement="BPMNShape_ExclusiveGateway_2">
+        <di:waypoint xsi:type="dc:Point" x="1068.0" y="289.0"/>
+        <di:waypoint xsi:type="dc:Point" x="1068.0" y="406.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_21"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_10" bpmnElement="SequenceFlow_12" sourceElement="BPMNShape_ExclusiveGateway_2" targetElement="BPMNShape_ExclusiveGateway_5">
+        <di:waypoint xsi:type="dc:Point" x="1043.0" y="431.0"/>
+        <di:waypoint xsi:type="dc:Point" x="887.0" y="431.0"/>
+        <di:waypoint xsi:type="dc:Point" x="887.0" y="65.0"/>
+        <di:waypoint xsi:type="dc:Point" x="730.0" y="65.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_22">
+          <dc:Bounds height="15.0" width="23.0" x="876.0" y="249.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_11" bpmnElement="SequenceFlow_13" sourceElement="BPMNShape_ScriptTask_4" targetElement="BPMNShape_ExclusiveGateway_5">
+        <di:waypoint xsi:type="dc:Point" x="1109.0" y="656.0"/>
+        <di:waypoint xsi:type="dc:Point" x="1109.0" y="403.0"/>
+        <di:waypoint xsi:type="dc:Point" x="1168.0" y="403.0"/>
+        <di:waypoint xsi:type="dc:Point" x="1168.0" y="65.0"/>
+        <di:waypoint xsi:type="dc:Point" x="730.0" y="65.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_23"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_12" bpmnElement="SequenceFlow_14" sourceElement="BPMNShape_ScriptTask_2" targetElement="BPMNShape_ExclusiveGateway_5">
+        <di:waypoint xsi:type="dc:Point" x="544.0" y="660.0"/>
+        <di:waypoint xsi:type="dc:Point" x="544.0" y="496.0"/>
+        <di:waypoint xsi:type="dc:Point" x="705.0" y="496.0"/>
+        <di:waypoint xsi:type="dc:Point" x="705.0" y="90.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_24"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_24" bpmnElement="SequenceFlow_22" sourceElement="BPMNShape_ExclusiveGateway_8" targetElement="BPMNShape_ScriptTask_1">
+        <di:waypoint xsi:type="dc:Point" x="165.0" y="250.0"/>
+        <di:waypoint xsi:type="dc:Point" x="165.0" y="310.0"/>
+        <di:waypoint xsi:type="dc:Point" x="230.0" y="310.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_27"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_6" bpmnElement="SequenceFlow_4" sourceElement="BPMNShape_StartEvent_1" targetElement="BPMNShape_ExclusiveGateway_8">
+        <di:waypoint xsi:type="dc:Point" x="56.0" y="225.0"/>
+        <di:waypoint xsi:type="dc:Point" x="98.0" y="225.0"/>
+        <di:waypoint xsi:type="dc:Point" x="140.0" y="225.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_17"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_8" bpmnElement="SequenceFlow_8" sourceElement="BPMNShape_ScriptTask_5" targetElement="BPMNShape_ExclusiveGateway_6">
+        <di:waypoint xsi:type="dc:Point" x="670.0" y="309.0"/>
+        <di:waypoint xsi:type="dc:Point" x="730.0" y="309.0"/>
+        <di:waypoint xsi:type="dc:Point" x="790.0" y="310.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_29"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_9" bpmnElement="SequenceFlow_9" sourceElement="BPMNShape_ScriptTask_1" targetElement="BPMNShape_ScriptTask_3">
+        <di:waypoint xsi:type="dc:Point" x="340.0" y="310.0"/>
+        <di:waypoint xsi:type="dc:Point" x="361.0" y="310.0"/>
+        <di:waypoint xsi:type="dc:Point" x="361.0" y="406.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_30"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_15" bpmnElement="SequenceFlow_10" sourceElement="BPMNShape_ExclusiveGateway_4" targetElement="BPMNShape_ScriptTask_9">
+        <di:waypoint xsi:type="dc:Point" x="444.0" y="285.0"/>
+        <di:waypoint xsi:type="dc:Point" x="444.0" y="248.0"/>
+        <di:waypoint xsi:type="dc:Point" x="400.0" y="248.0"/>
+        <di:waypoint xsi:type="dc:Point" x="400.0" y="210.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_31">
+          <dc:Bounds height="15.0" width="23.0" x="411.0" y="249.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_21" bpmnElement="SequenceFlow_11" sourceElement="BPMNShape_ExclusiveGateway_4" targetElement="BPMNShape_ScriptTask_5">
+        <di:waypoint xsi:type="dc:Point" x="469.0" y="310.0"/>
+        <di:waypoint xsi:type="dc:Point" x="504.0" y="310.0"/>
+        <di:waypoint xsi:type="dc:Point" x="540.0" y="309.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_32">
+          <dc:Bounds height="15.0" width="22.0" x="495.0" y="311.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_13" bpmnElement="SequenceFlow_15" sourceElement="BPMNShape_ExclusiveGateway_6" targetElement="BPMNShape_ScriptTask_2">
+        <di:waypoint xsi:type="dc:Point" x="815.0" y="335.0"/>
+        <di:waypoint xsi:type="dc:Point" x="815.0" y="698.0"/>
+        <di:waypoint xsi:type="dc:Point" x="633.0" y="698.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_7">
+          <dc:Bounds height="30.0" width="74.0" x="779.0" y="609.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_14" bpmnElement="SequenceFlow_16" sourceElement="BPMNShape_ScriptTask_3" targetElement="BPMNShape_ExclusiveGateway_4">
+        <di:waypoint xsi:type="dc:Point" x="397.0" y="406.0"/>
+        <di:waypoint xsi:type="dc:Point" x="397.0" y="310.0"/>
+        <di:waypoint xsi:type="dc:Point" x="419.0" y="310.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_13"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_1" bpmnElement="SequenceFlow_1" sourceElement="BPMNShape_ExclusiveGateway_5" targetElement="BPMNShape_ScriptTask_6">
+        <di:waypoint xsi:type="dc:Point" x="680.0" y="65.0"/>
+        <di:waypoint xsi:type="dc:Point" x="643.0" y="65.0"/>
+        <di:waypoint xsi:type="dc:Point" x="643.0" y="50.0"/>
+        <di:waypoint xsi:type="dc:Point" x="605.0" y="50.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_18"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_2" bpmnElement="SequenceFlow_2" sourceElement="BPMNShape_ScriptTask_6" targetElement="BPMNShape_IntermediateCatchEvent_1">
+        <di:waypoint xsi:type="dc:Point" x="495.0" y="50.0"/>
+        <di:waypoint xsi:type="dc:Point" x="447.0" y="50.0"/>
+        <di:waypoint xsi:type="dc:Point" x="399.0" y="50.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_19"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_7" bpmnElement="SequenceFlow_5" sourceElement="BPMNShape_IntermediateCatchEvent_1" targetElement="BPMNShape_ScriptTask_8">
+        <di:waypoint xsi:type="dc:Point" x="363.0" y="50.0"/>
+        <di:waypoint xsi:type="dc:Point" x="329.0" y="50.0"/>
+        <di:waypoint xsi:type="dc:Point" x="294.0" y="50.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_25"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_16" bpmnElement="SequenceFlow_17" sourceElement="BPMNShape_ScriptTask_8" targetElement="BPMNShape_ExclusiveGateway_8">
+        <di:waypoint xsi:type="dc:Point" x="184.0" y="50.0"/>
+        <di:waypoint xsi:type="dc:Point" x="164.0" y="50.0"/>
+        <di:waypoint xsi:type="dc:Point" x="164.0" y="125.0"/>
+        <di:waypoint xsi:type="dc:Point" x="165.0" y="200.0"/>
+        <bpmndi:BPMNLabel id="BPMNLabel_26"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_17" bpmnElement="SequenceFlow_18" sourceElement="BPMNShape_ScriptTask_9" targetElement="BPMNShape_EndEvent_1">
+        <di:waypoint xsi:type="dc:Point" x="455.0" y="160.0"/>
+        <di:waypoint xsi:type="dc:Point" x="492.0" y="160.0"/>
+        <di:waypoint xsi:type="dc:Point" x="492.0" y="178.0"/>
+        <di:waypoint xsi:type="dc:Point" x="530.0" y="178.0"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn2:definitions>

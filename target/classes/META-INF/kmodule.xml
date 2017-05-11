@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kmodule xmlns="http://jboss.org/kie/6.0.0/kmodule">
+	<!--  <kbase name="kb" default="true" eventProcessingMode="stream" equalsBehavior="identity">
+    	<ksession name="myKSession" type="stateful" default="true" clockType="realtime">
+      		<workItemHandlers>
+        			<workItemHandler type="com.redhat.gss.workitem.MyWorkItem" name="MyWorkItem"/>
+      		</workItemHandlers>
+    	</ksession>
+  </kbase>-->
+</kmodule>
